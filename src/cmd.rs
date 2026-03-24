@@ -14,7 +14,7 @@ pub enum CommandParsingError {
 impl std::fmt::Display for CommandParsingError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            CommandParsingError::CommandNotFound(str) => write!(f, "{str}: command not found"),
+            CommandParsingError::CommandNotFound(str) => write!(f, "{str}: not found"),
             CommandParsingError::TooManyArgs {
                 cmd_name,
                 max_arg_count,
