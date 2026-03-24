@@ -33,22 +33,27 @@ fn main() {
             .read_line(&mut raw_cmd)
             .expect("Failed to read user input");
 
-        let cmd = raw_cmd.trim();
+        let mut cmd_parts = raw_cmd.split_whitespace();
 
-        let _ = handle_cmd(cmd).map_err(|err| {
+        let cmd = cmd_parts
+            .next()
+            .expect("Could not get the main comand part");
+        let args: Vec<&str> = cmd_parts.collect();
+
+        let _ = handle_cmd(cmd, args).map_err(|err| {
             eprintln!("{}", err);
             err
         });
     }
 }
 
-fn handle_cmd(cmd: &str) -> Result<(), CommandParsingError> {
+fn handle_cmd(cmd: &str, args: Vec<&str>) -> Result<(), CommandParsingError> {
     use std::process::exit;
 
     match cmd {
         "exit" => exit(0),
         "echo" => {
-            println!("{}", cmd);
+            println!("{}", args.join(" "));
             Ok(())
         }
         _ => Err(CommandParsingError::CommandNotFound(cmd.into())),
