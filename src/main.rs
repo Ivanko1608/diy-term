@@ -47,6 +47,10 @@ fn handle_cmd(cmd: &str) -> Result<(), CommandParsingError> {
 
     match cmd {
         "exit" => exit(0),
+        "echo" => {
+            println!("{}", cmd);
+            Ok(())
+        }
         _ => Err(CommandParsingError::CommandNotFound(cmd.into())),
     }
 }
