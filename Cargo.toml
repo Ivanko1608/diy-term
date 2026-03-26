@@ -1,5 +1,5 @@
 [package]
-name = "diy-shell"
+name = "codecrafters-shell"
 version = "0.1.0"
 authors = ["Ivan K"]
 edition = "2024"
