@@ -4,6 +4,7 @@ use std::{
     collections::HashMap,
     path::PathBuf,
     process::{Command, Stdio},
+    sync::{LazyLock, RwLock},
 };
 
 use crate::cmd::{CommandParsingError, fill_bin_cache};
@@ -12,11 +13,12 @@ mod builtins;
 mod cmd;
 mod file_type;
 
-fn main() {
-    let mut bin_paths = HashMap::<String, PathBuf>::new();
+pub static BIN_CACHE: LazyLock<RwLock<HashMap<String, PathBuf>>> =
+    LazyLock::new(|| RwLock::new(HashMap::new()));
 
+fn main() {
     // TODO: not ignore this maybe?
-    let _ = fill_bin_cache(&mut bin_paths);
+    let _ = fill_bin_cache();
 
     loop {
         print!("$ ");
@@ -43,7 +45,11 @@ fn main() {
         match result {
             Ok(()) => {}
             Err(CommandParsingError::CommandNotFound(cmd)) => {
-                let Some(_bin_path) = bin_paths.get(&cmd) else {
+                let Some(_bin_path) = BIN_CACHE
+                    .read()
+                    .expect("Failed to lock BIN_CACHE for reading!")
+                    .get(&cmd)
+                else {
                     eprintln!("{cmd}: not found");
                     continue;
                 };

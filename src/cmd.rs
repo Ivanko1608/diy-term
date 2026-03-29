@@ -1,5 +1,6 @@
-use crate::builtins::BuiltinCmd;
 use std::{collections::HashMap, env, io, path::PathBuf};
+
+use crate::BIN_CACHE;
 
 use super::builtins;
 use super::file_type;
@@ -49,7 +50,7 @@ pub fn handle_builtin_cmd(cmd: &str, args: &Vec<&str>) -> Result<(), CommandPars
 
 // TODO: Invalidate cache when PATH changes.
 // FIXME: Get rid of pub
-pub fn fill_bin_cache(bin_cache: &mut HashMap<String, PathBuf>) -> Result<(), io::Error> {
+pub fn fill_bin_cache() -> Result<(), io::Error> {
     let paths = env::var_os(PATH_ENV_KEY).expect("No PATH env var found!");
 
     for path in env::split_paths(&paths) {
@@ -72,7 +73,9 @@ pub fn fill_bin_cache(bin_cache: &mut HashMap<String, PathBuf>) -> Result<(), io
                 continue;
             }
 
-            bin_cache
+            BIN_CACHE
+                .write()
+                .expect("Failed to lock BIN_CACHE")
                 .entry(
                     dir_entry
                         .file_name()

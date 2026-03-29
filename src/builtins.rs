@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use crate::cmd::{self, CommandParsingError};
+use crate::{BIN_CACHE, cmd::CommandParsingError};
 
 pub enum BuiltinCmd {
     Echo,
@@ -32,10 +32,16 @@ pub fn type_cmd(args: &[&str]) -> Result<(), CommandParsingError> {
     if args[0].parse::<BuiltinCmd>().is_ok() {
         println!("{} is a shell builtin", args[0]);
 
-        Ok(())
-    } else {
-        todo!()
+        return Ok(());
+    } else if BIN_CACHE
+        .read()
+        .expect("Failed to read from BIN_CACHE")
+        .contains_key(args[0])
+    {
+        println!("{}: is an executable", args[0]);
+        return Ok(());
     }
+    Err(CommandParsingError::CommandNotFound(args[0].into()))
 }
 
 pub fn echo(args: &str) {
