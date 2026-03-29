@@ -43,12 +43,13 @@ fn main() {
         match result {
             Ok(()) => {}
             Err(CommandParsingError::CommandNotFound(cmd)) => {
-                let Some(bin_path) = bin_paths.get(&cmd) else {
+                let Some(_bin_path) = bin_paths.get(&cmd) else {
                     eprintln!("{cmd}: not found");
                     continue;
                 };
 
-                Command::new(bin_path)
+                // I disagree with this and think we should call full path. but fine
+                Command::new(cmd)
                     .args(&args)
                     .stdout(Stdio::inherit())
                     .stderr(Stdio::inherit())
