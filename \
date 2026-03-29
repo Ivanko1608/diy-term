@@ -35,9 +35,11 @@ pub fn type_cmd(args: &[&str]) -> Result<(), CommandParsingError> {
         return Ok(());
     }
 
-    let bin_cache_guard = BIN_CACHE.read().expect("Failed to read from BIN_CACHE");
+    let bin_cache_guard = BIN_CACHE
+        .read()
+        .expect("Failed to read from BIN_CACHE");
 
-    if let Some(bin) = bin_cache_guard.get(args[0]) {
+    if let Some(bin) = bin_cache_guard.get(args[0]);{
         println!(
             "{}: is {}",
             args[0],
