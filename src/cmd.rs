@@ -71,13 +71,14 @@ pub fn fill_bin_cache(bin_cache: &mut HashMap<String, PathBuf>) -> Result<(), io
                 continue;
             }
 
-            bin_cache.insert(
-                dir_entry
-                    .file_name()
-                    .into_string()
-                    .expect("failed to convert os string to std string"),
-                dir_entry.path(),
-            );
+            bin_cache
+                .entry(
+                    dir_entry
+                        .file_name()
+                        .into_string()
+                        .expect("failed to convert os string"),
+                )
+                .or_insert(dir_entry.path());
         }
     }
 
