@@ -39,7 +39,7 @@ pub fn type_cmd(args: &[&str]) -> Result<(), CommandParsingError> {
 
     if let Some(bin) = bin_cache_guard.get(args[0]) {
         println!(
-            "{}: is {}",
+            "{} is {}",
             args[0],
             bin.to_str().expect("Failed to convers PathBuf to &str")
         );
