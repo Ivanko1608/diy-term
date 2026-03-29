@@ -11,6 +11,7 @@ use crate::cmd::{CommandParsingError, fill_bin_cache};
 
 mod builtins;
 mod cmd;
+mod file_type;
 
 fn main() {
     let mut bin_paths = HashMap::<String, PathBuf>::new();

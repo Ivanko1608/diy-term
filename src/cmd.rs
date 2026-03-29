@@ -2,6 +2,7 @@ use crate::builtins::BuiltinCmd;
 use std::{collections::HashMap, env, io, path::PathBuf};
 
 use super::builtins;
+use super::file_type;
 
 const PATH_ENV_KEY: &str = "PATH";
 
@@ -67,7 +68,13 @@ pub fn fill_bin_cache(bin_cache: &mut HashMap<String, PathBuf>) -> Result<(), io
             res.inspect_err(|e| eprintln!("Failed to get dir entry {e}"))
                 .ok()
         }) {
-            if !dir_entry.file_type()?.is_file() {
+            //TODO: Check executable
+            if !dir_entry.file_type()?.is_file()
+                || !file_type::is_executable(&dir_entry.path()).unwrap_or_else(|e| {
+                    eprintln!("Failed to get file type: {e} ");
+                    false
+                })
+            {
                 continue;
             }
 
