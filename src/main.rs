@@ -1,21 +1,23 @@
 #[allow(unused_imports)]
 use std::io::{self, Write};
-use std::{collections::HashMap, fs::DirEntry, path::PathBuf};
+use std::{
+    collections::HashMap,
+    fs::DirEntry,
+    path::PathBuf,
+    process::{Command, Stdio, exit},
+};
 
-use crate::cmd::fill_bin_cache;
+use crate::cmd::{CommandParsingError, fill_bin_cache};
 
 mod builtins;
 mod cmd;
 
-// fn main() {
-//     let mut bin_paths = HashMap::<String, PathBuf>::new();
-//
-//     fill_bin_cache(&mut bin_paths);
-//
-//     println!("{:?}", bin_paths)
-// }
-//
 fn main() {
+    let mut bin_paths = HashMap::<String, PathBuf>::new();
+
+    // TODO: not ignore this maybe?
+    let _ = fill_bin_cache(&mut bin_paths);
+
     loop {
         print!("$ ");
 
@@ -36,9 +38,27 @@ fn main() {
             .expect("Could not get the main comand part");
         let args: Vec<&str> = cmd_parts.collect();
 
-        let _ = cmd::handle_builtin_cmd(cmd, args).map_err(|err| {
-            eprintln!("{}", err);
-            err
-        });
+        let result = cmd::handle_builtin_cmd(cmd, args);
+
+        match result {
+            Ok(()) => {}
+            Err(CommandParsingError::CommandNotFound(cmd)) => {
+                let Some(bin_path) = bin_paths.get(&cmd) else {
+                    eprintln!("{cmd}: not found");
+                    continue;
+                };
+
+                println!("{cmd} is {}", bin_path.display())
+
+                // Command::new(bin_path)
+                //     .stdout(Stdio::inherit())
+                //     .stderr(Stdio::inherit())
+                //     .status()
+                //     .expect("Command failed!");
+            }
+            Err(e) => {
+                eprintln!("Failed to execute builtin command! {e}");
+            }
+        }
     }
 }
