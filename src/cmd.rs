@@ -1,6 +1,9 @@
 use crate::builtins::BuiltinCmd;
+use std::{collections::HashMap, env, io, path::PathBuf};
 
 use super::builtins;
+
+const PATH_ENV_KEY: &str = "PATH";
 
 #[derive(Debug)]
 pub enum CommandParsingError {
@@ -31,7 +34,7 @@ pub fn parse_builtin_cmd(cmd: &str) -> Result<BuiltinCmd, CommandParsingError> {
         .map_err(|_| CommandParsingError::CommandNotFound(cmd.into()))
 }
 
-pub fn handle_cmd(cmd: &str, args: Vec<&str>) -> Result<(), CommandParsingError> {
+pub fn handle_builtin_cmd(cmd: &str, args: Vec<&str>) -> Result<(), CommandParsingError> {
     use super::builtins::BuiltinCmd;
     use std::process::exit;
 
@@ -46,4 +49,37 @@ pub fn handle_cmd(cmd: &str, args: Vec<&str>) -> Result<(), CommandParsingError>
             Ok(())
         }
     }
+}
+
+// TODO: Invalidate cache when PATH changes.
+// FIXME: Get rid of pub
+pub fn fill_bin_cache(bin_cache: &mut HashMap<String, PathBuf>) -> Result<(), io::Error> {
+    let paths = env::var_os(PATH_ENV_KEY).expect("No PATH env var found!");
+
+    for path in env::split_paths(&paths) {
+        if !path.is_dir() {
+            continue;
+        };
+
+        let dir_contents = path.read_dir().expect("Failed to read dir!");
+
+        for dir_entry in dir_contents.filter_map(|res| {
+            res.inspect_err(|e| eprintln!("Failed to get dir entry {e}"))
+                .ok()
+        }) {
+            if !dir_entry.file_type()?.is_file() {
+                continue;
+            }
+
+            bin_cache.insert(
+                dir_entry
+                    .file_name()
+                    .into_string()
+                    .expect("failed to convert os string to std string"),
+                dir_entry.path(),
+            );
+        }
+    }
+
+    Ok(())
 }
