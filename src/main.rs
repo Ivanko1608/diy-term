@@ -1,11 +1,6 @@
 #[allow(unused_imports)]
 use std::io::{self, Write};
-use std::{
-    collections::HashMap,
-    fs::DirEntry,
-    path::PathBuf,
-    process::{Command, Stdio, exit},
-};
+use std::{collections::HashMap, path::PathBuf};
 
 use crate::cmd::{CommandParsingError, fill_bin_cache};
 
