@@ -9,14 +9,14 @@ pub enum BuiltinCmd {
 }
 
 impl FromStr for BuiltinCmd {
-    type Err = String;
+    type Err = CommandParsingError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "type" => Ok(BuiltinCmd::Type),
             "echo" => Ok(BuiltinCmd::Echo),
             "exit" => Ok(BuiltinCmd::Exit),
-            _ => Err(format!("Command: {s} not found in BuiltinCmd enum!")),
+            _ => Err(CommandParsingError::CommandNotFound(s.into())),
         }
     }
 }
@@ -29,11 +29,13 @@ pub fn type_cmd(args: &[&str]) -> Result<(), CommandParsingError> {
         });
     }
 
-    let _ = cmd::parse_builtin_cmd(args[0])?;
+    if args[0].parse::<BuiltinCmd>().is_ok() {
+        println!("{} is a shell builtin", args[0]);
 
-    println!("{} is a shell builtin", args[0]);
-
-    Ok(())
+        Ok(())
+    } else {
+        todo!()
+    }
 }
 
 pub fn echo(args: &str) {

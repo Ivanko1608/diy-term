@@ -30,23 +30,18 @@ impl std::fmt::Display for CommandParsingError {
 // TODO: Implement source?
 impl std::error::Error for CommandParsingError {}
 
-pub fn parse_builtin_cmd(cmd: &str) -> Result<BuiltinCmd, CommandParsingError> {
-    cmd.parse::<BuiltinCmd>()
-        .map_err(|_| CommandParsingError::CommandNotFound(cmd.into()))
-}
-
 pub fn handle_builtin_cmd(cmd: &str, args: &Vec<&str>) -> Result<(), CommandParsingError> {
     use super::builtins::BuiltinCmd;
     use std::process::exit;
 
-    match parse_builtin_cmd(cmd)? {
+    match cmd.parse::<BuiltinCmd>()? {
         BuiltinCmd::Exit => exit(0),
         BuiltinCmd::Echo => {
             builtins::echo(&args.join(" "));
             Ok(())
         }
         BuiltinCmd::Type => {
-            builtins::type_cmd(&args)?;
+            builtins::type_cmd(args)?;
             Ok(())
         }
     }
