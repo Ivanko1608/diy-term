@@ -1,6 +1,10 @@
 #[allow(unused_imports)]
 use std::io::{self, Write};
-use std::{collections::HashMap, path::PathBuf};
+use std::{
+    collections::HashMap,
+    path::PathBuf,
+    process::{Command, Stdio},
+};
 
 use crate::cmd::{CommandParsingError, fill_bin_cache};
 
@@ -34,7 +38,7 @@ fn main() {
             .expect("Could not get the main comand part");
         let args: Vec<&str> = cmd_parts.collect();
 
-        let result = cmd::handle_builtin_cmd(cmd, args);
+        let result = cmd::handle_builtin_cmd(cmd, &args);
 
         match result {
             Ok(()) => {}
@@ -44,13 +48,12 @@ fn main() {
                     continue;
                 };
 
-                println!("{cmd} is {}", bin_path.display())
-
-                // Command::new(bin_path)
-                //     .stdout(Stdio::inherit())
-                //     .stderr(Stdio::inherit())
-                //     .status()
-                //     .expect("Command failed!");
+                Command::new(bin_path)
+                    .args(&args)
+                    .stdout(Stdio::inherit())
+                    .stderr(Stdio::inherit())
+                    .status()
+                    .expect("Command failed!");
             }
             Err(e) => {
                 eprintln!("Failed to execute builtin command! {e}");

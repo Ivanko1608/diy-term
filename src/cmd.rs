@@ -35,7 +35,7 @@ pub fn parse_builtin_cmd(cmd: &str) -> Result<BuiltinCmd, CommandParsingError> {
         .map_err(|_| CommandParsingError::CommandNotFound(cmd.into()))
 }
 
-pub fn handle_builtin_cmd(cmd: &str, args: Vec<&str>) -> Result<(), CommandParsingError> {
+pub fn handle_builtin_cmd(cmd: &str, args: &Vec<&str>) -> Result<(), CommandParsingError> {
     use super::builtins::BuiltinCmd;
     use std::process::exit;
 
