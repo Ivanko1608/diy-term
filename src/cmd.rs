@@ -1,3 +1,4 @@
+use std::path::Path;
 use std::{env, io};
 
 use crate::BIN_CACHE;
@@ -53,6 +54,24 @@ pub fn handle_builtin_cmd(cmd: &str, args: &Vec<&str>) -> Result<(), CommandPars
                     .display()
             );
             Ok(())
+        }
+        BuiltinCmd::ChangeDirectory => {
+            if let Some(path) = args.first() {
+                let path_exists = Path::new(path)
+                    .try_exists()
+                    .expect("Failed to check is path exists!");
+
+                if !path_exists {
+                    println!("cd: {path}: No such file or directory");
+                    return Ok(());
+                }
+
+                env::set_current_dir(path).expect("Failed to set current dir!");
+                Ok(())
+            } else {
+                //TODO: Error out if cd is passsed < 1 arg.
+                todo!()
+            }
         }
     }
 }
