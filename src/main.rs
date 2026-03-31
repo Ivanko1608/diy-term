@@ -13,6 +13,7 @@ mod builtins;
 mod cmd;
 mod file_type;
 
+/// Cache of binary names -> paths, found in all dirs from the PATH env var.
 pub static BIN_CACHE: LazyLock<RwLock<HashMap<String, PathBuf>>> =
     LazyLock::new(|| RwLock::new(HashMap::new()));
 

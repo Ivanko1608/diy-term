@@ -1,4 +1,4 @@
-use std::{collections::HashMap, env, io, path::PathBuf};
+use std::{env, io};
 
 use crate::BIN_CACHE;
 
@@ -43,6 +43,15 @@ pub fn handle_builtin_cmd(cmd: &str, args: &Vec<&str>) -> Result<(), CommandPars
         }
         BuiltinCmd::Type => {
             builtins::type_cmd(args)?;
+            Ok(())
+        }
+        BuiltinCmd::PrintWorkingDirectory => {
+            println!(
+                "{}",
+                env::current_dir()
+                    .expect("Failed to get current directory.")
+                    .display()
+            );
             Ok(())
         }
     }
