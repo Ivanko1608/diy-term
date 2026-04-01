@@ -59,10 +59,9 @@ pub fn handle_builtin_cmd(cmd: &str, args: &Vec<&str>) -> Result<(), CommandPars
             if let Some(path) = args.first() {
                 let mut path = PathBuf::from(path);
 
+                // TODO: This will fail on Windows systems!
                 if path == Path::new("~") {
-                    let home_path = env::var_os("HOME").expect("No HOME env var found!");
-
-                    let home_path = PathBuf::from(home_path);
+                    let home_path = std::env::home_dir().expect("Failed to get home dir!");
 
                     path = home_path;
                 }
