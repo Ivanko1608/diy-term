@@ -8,6 +8,7 @@ pub enum BuiltinCmd {
     Exit,
     PrintWorkingDirectory,
     ChangeDirectory,
+    History,
 }
 
 impl FromStr for BuiltinCmd {
@@ -20,6 +21,7 @@ impl FromStr for BuiltinCmd {
             "exit" => Ok(BuiltinCmd::Exit),
             "pwd" => Ok(BuiltinCmd::PrintWorkingDirectory),
             "cd" => Ok(BuiltinCmd::ChangeDirectory),
+            "history" => Ok(BuiltinCmd::History),
             _ => Err(CommandParsingError::CommandNotFound(s.into())),
         }
     }

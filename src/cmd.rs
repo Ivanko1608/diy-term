@@ -2,6 +2,7 @@ use std::path::{Path, PathBuf};
 use std::{env, io};
 
 use crate::BIN_CACHE;
+use crate::history::get_history;
 
 use super::builtins;
 use super::file_type;
@@ -53,6 +54,10 @@ pub fn handle_builtin_cmd(cmd: &str, args: &Vec<&str>) -> Result<(), CommandPars
                     .expect("Failed to get current directory.")
                     .display()
             );
+            Ok(())
+        }
+        BuiltinCmd::History => {
+            get_history();
             Ok(())
         }
         BuiltinCmd::ChangeDirectory => {

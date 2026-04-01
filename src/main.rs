@@ -7,11 +7,15 @@ use std::{
     sync::{LazyLock, RwLock},
 };
 
-use crate::cmd::{CommandParsingError, fill_bin_cache};
+use crate::{
+    cmd::{CommandParsingError, fill_bin_cache},
+    history::add_cmd_to_history,
+};
 
 mod builtins;
 mod cmd;
 mod file_type;
+mod history;
 
 /// Cache of binary names -> paths, found in all dirs from the PATH env var.
 pub static BIN_CACHE: LazyLock<RwLock<HashMap<String, PathBuf>>> =
@@ -44,7 +48,9 @@ fn main() {
         let result = cmd::handle_builtin_cmd(cmd, &args);
 
         match result {
-            Ok(()) => {}
+            Ok(()) => {
+                add_cmd_to_history(cmd, args);
+            }
             Err(CommandParsingError::CommandNotFound(cmd)) => {
                 let Some(_bin_path) = BIN_CACHE
                     .read()
@@ -56,12 +62,14 @@ fn main() {
                 };
 
                 // I disagree with this and think we should call full path. but fine
-                Command::new(cmd)
+                Command::new(&cmd)
                     .args(&args)
                     .stdout(Stdio::inherit())
                     .stderr(Stdio::inherit())
                     .status()
                     .expect("Command failed!");
+
+                add_cmd_to_history(&cmd, args);
             }
             Err(e) => {
                 eprintln!("Failed to execute builtin command! {e}");
