@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::{env, io};
 
 use crate::BIN_CACHE;
@@ -57,12 +57,20 @@ pub fn handle_builtin_cmd(cmd: &str, args: &Vec<&str>) -> Result<(), CommandPars
         }
         BuiltinCmd::ChangeDirectory => {
             if let Some(path) = args.first() {
-                let path_exists = Path::new(path)
-                    .try_exists()
-                    .expect("Failed to check is path exists!");
+                let mut path = PathBuf::from(path);
+
+                if path == Path::new("~") {
+                    let home_path = env::var_os("HOME").expect("No HOME env var found!");
+
+                    let home_path = PathBuf::from(home_path);
+
+                    path = home_path;
+                }
+
+                let path_exists = path.try_exists().expect("Failed to check is path exists!");
 
                 if !path_exists {
-                    println!("cd: {path}: No such file or directory");
+                    println!("cd: {}: No such file or directory", path.display());
                     return Ok(());
                 }
 
