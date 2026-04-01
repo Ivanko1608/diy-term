@@ -59,7 +59,6 @@ pub fn handle_builtin_cmd(cmd: &str, args: &Vec<&str>) -> Result<(), CommandPars
             if let Some(path) = args.first() {
                 let mut path = PathBuf::from(path);
 
-                // TODO: This will fail on Windows systems!
                 if path == Path::new("~") {
                     let home_path = std::env::home_dir().expect("Failed to get home dir!");
 
@@ -76,7 +75,6 @@ pub fn handle_builtin_cmd(cmd: &str, args: &Vec<&str>) -> Result<(), CommandPars
                 env::set_current_dir(path).expect("Failed to set current dir!");
                 Ok(())
             } else {
-                //TODO: Error out if cd is passsed < 1 arg.
                 eprintln!("cd takes exactly 1 argument! cd <your-dir>");
                 Ok(())
             }
