@@ -77,7 +77,8 @@ pub fn handle_builtin_cmd(cmd: &str, args: &Vec<&str>) -> Result<(), CommandPars
                 Ok(())
             } else {
                 //TODO: Error out if cd is passsed < 1 arg.
-                todo!()
+                eprintln!("cd takes exactly 1 argument! cd <your-dir>");
+                Ok(())
             }
         }
     }
