@@ -1,13 +1,15 @@
 use std::path::{Path, PathBuf};
+use std::sync::{Mutex, OnceLock};
 use std::{env, io};
 
 use crate::BIN_CACHE;
-use crate::history::get_history;
+use crate::history::History;
 
 use super::builtins;
 use super::file_type;
 
 const PATH_ENV_KEY: &str = "PATH";
+static HISTORY_FILE_HANDLE: OnceLock<Mutex<History>> = OnceLock::new();
 
 #[derive(Debug)]
 pub enum CommandParsingError {
