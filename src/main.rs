@@ -1,4 +1,3 @@
-#[allow(unused_imports)]
 use std::io::{self, Write};
 use std::{
     collections::HashMap,
@@ -7,11 +6,10 @@ use std::{
     sync::{LazyLock, RwLock},
 };
 
-use crate::{
-    cmd::{CommandParsingError, fill_bin_cache},
-    history::add_cmd_to_history,
-};
+use std::sync::Mutex;
 
+use crate::cmd::{CommandParsingError, fill_bin_cache};
+use crate::history::History;
 mod builtins;
 mod cmd;
 mod file_type;
@@ -21,9 +19,28 @@ mod history;
 pub static BIN_CACHE: LazyLock<RwLock<HashMap<String, PathBuf>>> =
     LazyLock::new(|| RwLock::new(HashMap::new()));
 
+pub static HISTORY: LazyLock<Mutex<History>> = LazyLock::new(|| Mutex::new(History::new()));
+
 fn main() {
+    std::panic::set_hook(Box::new(|info| {
+        eprintln!("thread panicked: {}", info);
+    }));
+
+    // We do this to force lazy lock to initialize,
+    // that way the history file will be read before we spawn the thread that truncates it down
+    // the line.
+    drop(HISTORY.lock().unwrap());
+
     // TODO: not ignore this maybe?
     let _ = fill_bin_cache();
+
+    std::thread::spawn(|| {
+        use std::time::Duration;
+        loop {
+            std::thread::sleep(Duration::from_secs(15));
+            HISTORY.lock().unwrap().write_to_disk();
+        }
+    });
 
     loop {
         print!("$ ");
@@ -38,6 +55,10 @@ fn main() {
             .read_line(&mut raw_cmd)
             .expect("Failed to read user input");
 
+        if raw_cmd.trim().is_empty() {
+            continue;
+        }
+
         let mut cmd_parts = raw_cmd.split_whitespace();
 
         let cmd = cmd_parts
@@ -49,7 +70,7 @@ fn main() {
 
         match result {
             Ok(()) => {
-                add_cmd_to_history(cmd, args);
+                HISTORY.lock().unwrap().add_cmd(cmd, args);
             }
             Err(CommandParsingError::CommandNotFound(cmd)) => {
                 let Some(_bin_path) = BIN_CACHE
@@ -69,7 +90,7 @@ fn main() {
                     .status()
                     .expect("Command failed!");
 
-                add_cmd_to_history(&cmd, args);
+                HISTORY.lock().unwrap().add_cmd(&cmd, args);
             }
             Err(e) => {
                 eprintln!("Failed to execute builtin command! {e}");

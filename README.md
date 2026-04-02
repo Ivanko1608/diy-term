@@ -1,6 +1,8 @@
 # DIY Terminal
 
-This is just a simple shell implementation.
+This is just a simple shell implementation created for the purpose of experimenting with rust it a systems programming setting.
+
+The project uses no crates and I'm making it with the standard lib only.
 
 ## Currently it can do
 
@@ -14,4 +16,5 @@ This is just a simple shell implementation.
 - history
 - using arrows to move around in the prompt
 - io redirection.
+- *CTRL + C* handler (this requires some unsafe code that is platform specific so I left it for later.)
 - Maybe more!

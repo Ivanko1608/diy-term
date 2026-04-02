@@ -1,15 +1,12 @@
 use std::path::{Path, PathBuf};
-use std::sync::{Mutex, OnceLock};
 use std::{env, io};
 
-use crate::BIN_CACHE;
-use crate::history::History;
+use crate::{BIN_CACHE, HISTORY};
 
 use super::builtins;
 use super::file_type;
 
 const PATH_ENV_KEY: &str = "PATH";
-static HISTORY_FILE_HANDLE: OnceLock<Mutex<History>> = OnceLock::new();
 
 #[derive(Debug)]
 pub enum CommandParsingError {
@@ -59,7 +56,12 @@ pub fn handle_builtin_cmd(cmd: &str, args: &Vec<&str>) -> Result<(), CommandPars
             Ok(())
         }
         BuiltinCmd::History => {
-            get_history();
+            HISTORY
+                .lock()
+                .expect("Mutex has been poisoned!")
+                .get_history()
+                .iter()
+                .for_each(|s| println!("{s}"));
             Ok(())
         }
         BuiltinCmd::ChangeDirectory => {
