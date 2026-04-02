@@ -1,8 +1,7 @@
 use std::path::{Path, PathBuf};
 use std::{env, io};
 
-use crate::BIN_CACHE;
-use crate::history::get_history;
+use crate::{BIN_CACHE, HISTORY};
 
 use super::builtins;
 use super::file_type;
@@ -57,7 +56,12 @@ pub fn handle_builtin_cmd(cmd: &str, args: &Vec<&str>) -> Result<(), CommandPars
             Ok(())
         }
         BuiltinCmd::History => {
-            get_history();
+            HISTORY
+                .lock()
+                .expect("Mutex has been poisoned!")
+                .get_history()
+                .iter()
+                .for_each(|s| println!("{s}"));
             Ok(())
         }
         BuiltinCmd::ChangeDirectory => {
