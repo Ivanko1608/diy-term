@@ -18,3 +18,6 @@ The project uses no crates and I'm making it with the standard lib only.
 - io redirection.
 - *CTRL + C* handler (this requires some unsafe code that is platform specific so I left it for later.)
 - Maybe more!
+
+## Useful reading to do this yourself
+- Xterm ANSI control codes reference https://invisible-island.net/xterm/ctlseqs/ctlseqs.html
