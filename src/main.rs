@@ -1,4 +1,4 @@
-use std::io::{self, Write};
+use std::io::{self, Read, Write};
 use std::{
     collections::HashMap,
     path::PathBuf,
@@ -10,10 +10,20 @@ use std::sync::Mutex;
 
 use crate::cmd::{CommandParsingError, fill_bin_cache};
 use crate::history::History;
+use crate::raw_term::util::clear_line;
+use crate::raw_term::{KbKey, RawMode, get_key};
 mod builtins;
 mod cmd;
 mod file_type;
 mod history;
+mod raw_term;
+
+macro_rules! print_flush {
+    ($($arg:tt)+) => {
+        print!($($arg)+);
+        io::stdout().flush().expect("Failed to flush Stdout");
+    };
+}
 
 /// Cache of binary names -> paths, found in all dirs from the PATH env var.
 pub static BIN_CACHE: LazyLock<RwLock<HashMap<String, PathBuf>>> =
@@ -42,18 +52,77 @@ fn main() {
         }
     });
 
-    loop {
-        print!("$ ");
-
-        // Rust doesn't flush afrer a print! only after println! so the print above won't be flushed
-        // unless we force it
-        io::stdout().flush().unwrap();
+    'main_loop: loop {
+        print_flush!("$ ");
 
         let mut raw_cmd = String::new();
+        {
+            let _raw_mod = RawMode::new();
+            let mut cursor = raw_cmd.len();
 
-        io::stdin()
-            .read_line(&mut raw_cmd)
-            .expect("Failed to read user input");
+            loop {
+                let mut input_buf = [0u8; 1];
+                io::stdin()
+                    .read_exact(&mut input_buf)
+                    .expect("Failed to read 1 byte from input!");
+
+                match get_key(input_buf[0]) {
+                    KbKey::Enter => {
+                        print_flush!("\r\n");
+                        break;
+                    }
+                    KbKey::CtrlC => {
+                        break 'main_loop;
+                    }
+                    KbKey::Backspace => {
+                        if raw_cmd.is_empty() {
+                            continue;
+                        }
+
+                        if cursor == raw_cmd.len() {
+                            raw_cmd.pop();
+                        } else {
+                            raw_cmd.remove(cursor - 1);
+                        }
+
+                        cursor -= 1;
+
+                        clear_line();
+                        print_flush!("$ {raw_cmd}");
+                    }
+                    KbKey::Char(c) => {
+                        raw_cmd.push(c);
+                        cursor += 1;
+                        print_flush!("{}", c);
+                    }
+                    KbKey::Left => {
+                        if cursor != 0 {
+                            cursor -= 1;
+                        } else {
+                            continue;
+                        }
+
+                        print_flush!("\x1b[1D");
+                    }
+                    KbKey::Right => {
+                        cursor += 1;
+                        print_flush!("\x1b[1C");
+                    }
+                    KbKey::Unknown(b) => {
+                        eprint!("Some other byte: {:?} \r\n", char::from(b));
+                        io::stderr().flush().unwrap();
+                    }
+                    KbKey::UnknownMultiByte(v) => {
+                        eprint!("{:?}", v);
+                        io::stderr().flush().unwrap();
+                    }
+                    key => {
+                        eprint!("Handling key: {:?} is not yet implemented! \r\n$ ", key);
+                        io::stderr().flush().unwrap();
+                    }
+                }
+            }
+        }
 
         if raw_cmd.trim().is_empty() {
             continue;
