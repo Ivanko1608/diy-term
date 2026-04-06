@@ -98,3 +98,13 @@ pub fn get_key(raw_key: u8) -> KbKey {
         b => KbKey::Unknown(b),
     }
 }
+
+pub mod util {
+    /// Clears the current terminal line.
+    /// `\r` — move to start of line
+    /// `\x1b[K` — erase from cursor to end of line
+    /// **Caller is responsible for flushing the buffer!**
+    pub fn clear_line() {
+        print!("\r\x1b[K");
+    }
+}

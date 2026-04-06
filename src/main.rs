@@ -10,6 +10,7 @@ use std::sync::Mutex;
 
 use crate::cmd::{CommandParsingError, fill_bin_cache};
 use crate::history::History;
+use crate::raw_term::util::clear_line;
 use crate::raw_term::{KbKey, RawMode, get_key};
 mod builtins;
 mod cmd;
@@ -54,7 +55,7 @@ fn main() {
         let mut raw_cmd = String::new();
         {
             let _raw_mod = RawMode::new();
-            let cursor = 0;
+            let mut cursor = raw_cmd.len();
 
             loop {
                 let mut input_buf = [0u8; 1];
@@ -73,26 +74,42 @@ fn main() {
                     }
                     // BACKSPACE
                     KbKey::Backspace => {
-                        if raw_cmd.pop().is_some() {
-                            // FIXME this only works if you are erasing the start of the cmd, in the
-                            //middle you have to now move back inside raw_cmd ALL the chars after the one erased unless raw_cmd is now len(0)
-
-                            // \x08 moves the cursor back one, we then overwrite that with a space
-                            // the cursor moves forward once and we move it back again.
-                            print!("\x08 \x08");
-                            io::stdout().flush().unwrap()
+                        if raw_cmd.is_empty() {
+                            continue;
                         }
+
+                        if cursor == raw_cmd.len() {
+                            raw_cmd.pop();
+                        } else {
+                            raw_cmd.remove(cursor - 1);
+                        }
+
+                        cursor -= 1;
+
+                        clear_line();
+
+                        print!("$ {raw_cmd}");
+
+                        io::stdout().flush().unwrap()
                     }
                     KbKey::Char(c) => {
                         raw_cmd.push(c);
+                        cursor += 1;
                         print!("{}", c);
                         io::stdout().flush().unwrap();
                     }
                     KbKey::Left => {
+                        if cursor != 0 {
+                            cursor -= 1;
+                        } else {
+                            continue;
+                        }
+
                         print!("\x1b[1D");
                         io::stdout().flush().unwrap();
                     }
                     KbKey::Right => {
+                        cursor += 1;
                         print!("\x1b[1C");
                         io::stdout().flush().unwrap();
                     }
