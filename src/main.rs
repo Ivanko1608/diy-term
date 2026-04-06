@@ -18,6 +18,13 @@ mod file_type;
 mod history;
 mod raw_term;
 
+macro_rules! print_flush {
+    ($($arg:tt)+) => {
+        print!($($arg)+);
+        io::stdout().flush().expect("Failed to flush Stdout");
+    };
+}
+
 /// Cache of binary names -> paths, found in all dirs from the PATH env var.
 pub static BIN_CACHE: LazyLock<RwLock<HashMap<String, PathBuf>>> =
     LazyLock::new(|| RwLock::new(HashMap::new()));
@@ -46,11 +53,7 @@ fn main() {
     });
 
     'main_loop: loop {
-        print!("$ ");
-
-        // Rust doesn't flush afrer a print! only after println! so the print above won't be flushed
-        // unless we force it
-        io::stdout().flush().unwrap();
+        print_flush!("$ ");
 
         let mut raw_cmd = String::new();
         {
@@ -65,14 +68,12 @@ fn main() {
 
                 match get_key(input_buf[0]) {
                     KbKey::Enter => {
-                        print!("\r\n");
-                        io::stdout().flush().unwrap();
+                        print_flush!("\r\n");
                         break;
                     }
                     KbKey::CtrlC => {
                         break 'main_loop;
                     }
-                    // BACKSPACE
                     KbKey::Backspace => {
                         if raw_cmd.is_empty() {
                             continue;
@@ -87,16 +88,12 @@ fn main() {
                         cursor -= 1;
 
                         clear_line();
-
-                        print!("$ {raw_cmd}");
-
-                        io::stdout().flush().unwrap()
+                        print_flush!("$ {raw_cmd}");
                     }
                     KbKey::Char(c) => {
                         raw_cmd.push(c);
                         cursor += 1;
-                        print!("{}", c);
-                        io::stdout().flush().unwrap();
+                        print_flush!("{}", c);
                     }
                     KbKey::Left => {
                         if cursor != 0 {
@@ -105,13 +102,11 @@ fn main() {
                             continue;
                         }
 
-                        print!("\x1b[1D");
-                        io::stdout().flush().unwrap();
+                        print_flush!("\x1b[1D");
                     }
                     KbKey::Right => {
                         cursor += 1;
-                        print!("\x1b[1C");
-                        io::stdout().flush().unwrap();
+                        print_flush!("\x1b[1C");
                     }
                     KbKey::Unknown(b) => {
                         eprint!("Some other byte: {:?} \r\n", char::from(b));

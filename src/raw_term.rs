@@ -38,7 +38,7 @@ impl RawMode {
         }
 
         let raw_mode = RawMode {
-            original_termios: termios.clone(),
+            original_termios: termios,
         };
 
         unsafe { cfmakeraw(&mut termios) };
