@@ -2,7 +2,7 @@ use std::collections::VecDeque;
 use std::fs::{self, File};
 use std::io::Write;
 use std::io::{BufRead, BufReader, BufWriter};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 const DEFAULT_HISTORY_LENGTH: usize = 10_000;
 const HISTORY_FILE_NAME: &str = ".diyhistory";
@@ -19,17 +19,17 @@ impl History {
 
         let path = home_dir.join(HISTORY_FILE_NAME);
 
-        let history = History::load_from_fs();
+        let history = History::load_from_fs(&path);
 
         History { path, history }
     }
 
-    fn load_from_fs() -> VecDeque<String> {
-        // NOTE: Maybe not crash because of this?
-        let home_dir = std::env::home_dir().expect("Failed to get home dir!");
+    pub fn with_path(path: PathBuf) -> History {
+        let history = History::load_from_fs(&path);
+        History { path, history }
+    }
 
-        let path = home_dir.join(HISTORY_FILE_NAME);
-
+    fn load_from_fs(path: &Path) -> VecDeque<String> {
         let file = match File::open(path) {
             Ok(file) => file,
             Err(e) => {
@@ -48,7 +48,7 @@ impl History {
     }
 
     pub fn add_cmd(&mut self, cmd: &str, args: Vec<&str>) {
-        if self.history.len() + 1 > DEFAULT_HISTORY_LENGTH {
+        if self.history.len() >= DEFAULT_HISTORY_LENGTH {
             self.history.pop_front();
         }
 
@@ -76,11 +76,21 @@ impl History {
 
 #[cfg(test)]
 mod test {
+    use std::time::UNIX_EPOCH;
+
     use super::*;
 
     #[test]
     fn test_history_truncates_before_passing_limit() {
-        let mut history = History::new();
+        let path = PathBuf::from(format!(
+            "/tmp/{}.diytest",
+            std::time::SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        println!("{:?}", &path);
+        let mut history = History::with_path(path);
         for _ in 0..10_005 {
             history.add_cmd("rm", vec!["-rf", "./coffee"]);
         }

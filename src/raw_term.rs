@@ -100,11 +100,41 @@ pub fn get_key(raw_key: u8) -> KbKey {
 }
 
 pub mod util {
+    use crate::print_flush;
+    use std::fmt::Display;
+
     /// Clears the current terminal line.
     /// `\r` — move to start of line
     /// `\x1b[K` — erase from cursor to end of line
     /// **Caller is responsible for flushing the buffer!**
     pub fn clear_line() {
         print!("\r\x1b[K");
+    }
+
+    #[derive(Debug)]
+    pub struct OffByOneError(usize);
+
+    impl Display for OffByOneError {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "off-by-one-error: ANSI counts from one, got: {}", self.0,)
+        }
+    }
+
+    pub fn move_cursor_right_n(n: usize) -> Result<(), OffByOneError> {
+        if n < 1 {
+            return Err(OffByOneError(n));
+        }
+
+        print_flush!("\x1b[{n}C");
+        Ok(())
+    }
+
+    pub fn move_cursor_left_n(n: usize) -> Result<(), OffByOneError> {
+        if n < 1 {
+            return Err(OffByOneError(n));
+        }
+
+        print_flush!("\x1b[{n}D");
+        Ok(())
     }
 }

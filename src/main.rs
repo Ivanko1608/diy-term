@@ -1,4 +1,4 @@
-use std::io::{self, Read, Write};
+use std::io::{self, Read};
 use std::{
     collections::HashMap,
     path::PathBuf,
@@ -8,22 +8,17 @@ use std::{
 
 use std::sync::Mutex;
 
-use crate::cmd::{CommandParsingError, fill_bin_cache};
-use crate::history::History;
-use crate::raw_term::util::clear_line;
-use crate::raw_term::{KbKey, RawMode, get_key};
 mod builtins;
 mod cmd;
 mod file_type;
 mod history;
+mod macros;
 mod raw_term;
 
-macro_rules! print_flush {
-    ($($arg:tt)+) => {
-        print!($($arg)+);
-        io::stdout().flush().expect("Failed to flush Stdout");
-    };
-}
+use crate::cmd::{CommandParsingError, fill_bin_cache};
+use crate::history::History;
+use crate::raw_term::util::{clear_line, move_cursor_left_n, move_cursor_right_n};
+use crate::raw_term::{KbKey, RawMode, get_key};
 
 /// Cache of binary names -> paths, found in all dirs from the PATH env var.
 pub static BIN_CACHE: LazyLock<RwLock<HashMap<String, PathBuf>>> =
@@ -56,9 +51,10 @@ fn main() {
         print_flush!("$ ");
 
         let mut raw_cmd = String::new();
+        let mut history_cmd: Option<&str> = None;
         {
             let _raw_mod = RawMode::new();
-            let mut cursor = raw_cmd.len();
+            let mut cursor = 0;
 
             loop {
                 let mut input_buf = [0u8; 1];
@@ -89,11 +85,19 @@ fn main() {
 
                         clear_line();
                         print_flush!("$ {raw_cmd}");
+                        if cursor != raw_cmd.len() {
+                            move_cursor_left_n(raw_cmd.len() - cursor).unwrap();
+                        }
                     }
                     KbKey::Char(c) => {
-                        raw_cmd.push(c);
+                        raw_cmd.insert(cursor, c);
+
                         cursor += 1;
-                        print_flush!("{}", c);
+                        clear_line();
+                        print_flush!("$ {raw_cmd}");
+                        if cursor != raw_cmd.len() {
+                            move_cursor_left_n(raw_cmd.len() - cursor).unwrap();
+                        }
                     }
                     KbKey::Left => {
                         if cursor != 0 {
@@ -102,12 +106,16 @@ fn main() {
                             continue;
                         }
 
-                        print_flush!("\x1b[1D");
+                        move_cursor_left_n(1).unwrap();
                     }
                     KbKey::Right => {
                         cursor += 1;
-                        print_flush!("\x1b[1C");
+                        if raw_cmd.len() <= cursor {
+                            raw_cmd.push(' ');
+                        }
+                        move_cursor_right_n(1).unwrap();
                     }
+                    KbKey::Up => {}
                     KbKey::Unknown(b) => {
                         eprint!("Some other byte: {:?} \r\n", char::from(b));
                         io::stderr().flush().unwrap();
