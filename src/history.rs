@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 use std::fs::{self, File};
-use std::io::Write;
+use std::io::{self, Write};
 use std::io::{BufRead, BufReader, BufWriter};
 use std::path::{Path, PathBuf};
 
@@ -55,22 +55,20 @@ impl History {
         self.history.push_back(format!("{cmd} {}", args.join(" ")));
     }
 
-    pub fn write_to_disk(&mut self) {
+    pub fn write_to_disk(&mut self) -> Result<(), io::Error> {
         let file = fs::File::options()
             .truncate(true)
             .create(true)
             .write(true)
-            .open(&self.path)
-            .expect("Failed to open history file");
+            .open(&self.path)?;
 
         let mut writer = BufWriter::new(file);
 
         for cmd in self.history.iter() {
-            let _ = writeln!(writer, "{cmd}").map_err(|e| {
-                eprintln!("Failed to write to history file! {e}");
-            });
+            writeln!(writer, "{cmd}")?;
         }
-        writer.flush().expect("Failed to flush writer!");
+        writer.flush()?;
+        Ok(())
     }
 }
 

@@ -3,9 +3,6 @@
 use libc::{STDIN_FILENO, TCSANOW, cfmakeraw, tcgetattr, tcsetattr, termios};
 use std::io::{self, Error, Read};
 
-// Control sequence introducer (ANSI)
-const CSI: u8 = b'\x9b';
-
 //ANSI: Escape sequence
 const ESC: u8 = b'\x1b';
 
@@ -77,13 +74,13 @@ pub fn get_key(raw_key: u8) -> KbKey {
 
         //ANSI Escape parsing
         ESC => {
-            let mut buf = [0u8, 2];
+            let mut buf = [0u8; 2];
 
             io::stdin()
                 .read_exact(&mut buf)
                 .expect("Failed to read 2 bytes from input!");
 
-            if !buf[0] == CSI {
+            if buf[0] != b'[' {
                 return KbKey::UnknownMultiByte(std::iter::once(ESC).chain(buf).collect());
             }
 

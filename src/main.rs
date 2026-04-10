@@ -1,4 +1,4 @@
-use std::io::{self, Read};
+use std::io::Read;
 use std::{
     collections::HashMap,
     path::PathBuf,
@@ -41,9 +41,23 @@ fn main() {
 
     std::thread::spawn(|| {
         use std::time::Duration;
+        let mut retry_count = 0;
+
         loop {
+            if retry_count >= 5 {
+                eprintln!("failed to open file 5 times exiting");
+                return;
+            }
             std::thread::sleep(Duration::from_secs(15));
-            HISTORY.lock().unwrap().write_to_disk();
+            if let Err(res) = HISTORY.lock().unwrap().write_to_disk() {
+                eprintln!("failed to open file history file {res}");
+
+                eprintln!("Retrying in 15 seconds, retry_count: {}", retry_count);
+                retry_count += 1;
+                std::thread::sleep(Duration::from_secs(15));
+                continue;
+            };
+            retry_count = 0;
         }
     });
 

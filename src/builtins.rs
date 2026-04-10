@@ -28,9 +28,11 @@ impl FromStr for BuiltinCmd {
 }
 
 pub fn type_cmd(args: &[&str]) -> Result<(), CommandParsingError> {
-    if args.len() > 1 {
-        return Err(CommandParsingError::TooManyArgs {
+    if args.len() > 1 || args.is_empty() {
+        return Err(CommandParsingError::InvalidArgCount {
             cmd_name: "type".into(),
+            min_arg_count: 1,
+            arg_count: args.len(),
             max_arg_count: 1,
         });
     }

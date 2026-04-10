@@ -11,8 +11,10 @@ const PATH_ENV_KEY: &str = "PATH";
 #[derive(Debug)]
 pub enum CommandParsingError {
     CommandNotFound(String),
-    TooManyArgs {
+    InvalidArgCount {
         cmd_name: String,
+        min_arg_count: usize,
+        arg_count: usize,
         max_arg_count: usize,
     },
 }
@@ -21,10 +23,15 @@ impl std::fmt::Display for CommandParsingError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             CommandParsingError::CommandNotFound(str) => write!(f, "{str}: not found"),
-            CommandParsingError::TooManyArgs {
+            CommandParsingError::InvalidArgCount {
                 cmd_name,
+                min_arg_count,
+                arg_count,
                 max_arg_count,
-            } => write!(f, "{cmd_name}: accepts max {max_arg_count} arguments!"),
+            } => write!(
+                f,
+                "{cmd_name}: accepts min {min_arg_count} and max {max_arg_count} arguments got: {arg_count}"
+            ),
         }
     }
 }
