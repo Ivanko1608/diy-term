@@ -10,6 +10,7 @@ const HISTORY_FILE_NAME: &str = ".diyhistory";
 pub struct History {
     path: PathBuf,
     history: VecDeque<String>,
+    index: Option<usize>,
 }
 
 // TODO: Implement an OnExit callback to dump history file to fs.
@@ -21,12 +22,20 @@ impl History {
 
         let history = History::load_from_fs(&path);
 
-        History { path, history }
+        History {
+            path,
+            history,
+            index: None,
+        }
     }
 
     pub fn with_path(path: PathBuf) -> History {
         let history = History::load_from_fs(&path);
-        History { path, history }
+        History {
+            path,
+            history,
+            index: None,
+        }
     }
 
     fn load_from_fs(path: &Path) -> VecDeque<String> {
@@ -55,6 +64,34 @@ impl History {
         self.history.push_back(format!("{cmd} {}", args.join(" ")));
     }
 
+    pub fn prev(&mut self) -> Option<&str> {
+        let index = self.index?;
+
+        if let Some(cmd) = self.history.get(index.checked_add(1)?) {
+            self.index = Some(index + 1);
+            Some(cmd)
+        } else {
+            None
+        }
+    }
+
+    pub fn next(&mut self) -> Option<&str> {
+        let index = self.index.unwrap_or(self.history.len());
+
+        // If index is at 0 checked_sub will return None and ? returns it immediately.
+        // otherwise we get the next command and return it if there is something to return.
+        if let Some(cmd) = self.history.get(index.checked_sub(1)?) {
+            self.index = Some(index - 1);
+            Some(cmd)
+        } else {
+            None
+        }
+    }
+
+    pub fn reset_browsing(&mut self) {
+        self.index = None;
+    }
+
     pub fn write_to_disk(&mut self) -> Result<(), io::Error> {
         let file = fs::File::options()
             .truncate(true)
@@ -74,24 +111,65 @@ impl History {
 
 #[cfg(test)]
 mod test {
-    use std::time::UNIX_EPOCH;
+    use std::{time::UNIX_EPOCH, vec};
 
     use super::*;
 
-    #[test]
-    fn test_history_truncates_before_passing_limit() {
-        let path = PathBuf::from(format!(
+    fn get_random_history_path() -> PathBuf {
+        PathBuf::from(format!(
             "/tmp/{}.diytest",
             std::time::SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .unwrap()
                 .as_nanos()
-        ));
-        println!("{:?}", &path);
-        let mut history = History::with_path(path);
+        ))
+    }
+
+    #[test]
+    fn test_history_caps_at_limit() {
+        let mut history = History::with_path(get_random_history_path());
         for _ in 0..10_005 {
             history.add_cmd("rm", vec!["-rf", "./coffee"]);
         }
         assert_eq!(history.get_history().len(), DEFAULT_HISTORY_LENGTH);
+    }
+
+    //TODO: Fix this horrid monstruosity.
+    #[test]
+    fn test_history_next_and_prev_random() {
+        let mut history = History::with_path(get_random_history_path());
+        history.add_cmd("foo", vec!["bar"]);
+        history.add_cmd("bar", vec!["baz"]);
+        history.add_cmd("lel", vec!["osdoods"]);
+
+        let el = history.next().unwrap();
+
+        assert_eq!(el, "lel osdoods");
+
+        let el = history.next().unwrap();
+
+        assert_eq!(el, "bar baz");
+
+        let el = history.next().unwrap();
+
+        assert_eq!(el, "foo bar");
+
+        let el = history.prev().unwrap();
+        assert_eq!(el, "bar baz");
+
+        let el = history.next().unwrap();
+
+        assert_eq!(el, "foo bar");
+
+        assert!(history.next().is_none());
+
+        let el = history.prev().unwrap();
+        assert_eq!(el, "bar baz");
+
+        let el = history.prev().unwrap();
+
+        assert_eq!(el, "lel osdoods");
+
+        assert!(history.prev().is_none());
     }
 }

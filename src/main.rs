@@ -65,7 +65,7 @@ fn main() {
         print_flush!("$ ");
 
         let mut raw_cmd = String::new();
-        let mut history_cmd: Option<&str> = None;
+        let mut saved_cmd: Option<String> = None;
         {
             let _raw_mod = RawMode::new();
             let mut cursor = 0;
@@ -78,6 +78,8 @@ fn main() {
 
                 match get_key(input_buf[0]) {
                     KbKey::Enter => {
+                        HISTORY.lock().unwrap().reset_browsing();
+
                         print_flush!("\r\n");
                         break;
                     }
@@ -129,7 +131,35 @@ fn main() {
                         }
                         move_cursor_right_n(1).unwrap();
                     }
-                    KbKey::Up => {}
+                    KbKey::Up => {
+                        let mut history = HISTORY.lock().unwrap();
+                        let Some(cmd) = history.next() else {
+                            continue;
+                        };
+
+                        if saved_cmd.is_none() {
+                            saved_cmd = Some(raw_cmd.clone());
+                        }
+
+                        raw_cmd = cmd.to_string();
+                        clear_line();
+                        print_flush!("$ {raw_cmd}");
+                    }
+                    KbKey::Down => {
+                        let mut history = HISTORY.lock().unwrap();
+                        let Some(cmd) = history.prev() else {
+                            history.reset_browsing();
+
+                            raw_cmd = Option::take(&mut saved_cmd).unwrap_or_default();
+
+                            clear_line();
+                            print_flush!("$ {raw_cmd}");
+                            continue;
+                        };
+                        raw_cmd = cmd.to_string();
+                        clear_line();
+                        print_flush!("$ {raw_cmd}");
+                    }
                     KbKey::Unknown(b) => {
                         eprint!("Some other byte: {:?} \r\n", char::from(b));
                         io::stderr().flush().unwrap();
