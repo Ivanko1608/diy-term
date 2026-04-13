@@ -75,10 +75,13 @@ pub fn handle_builtin_cmd(cmd: &str, args: &Vec<&str>) -> Result<(), CommandPars
             if let Some(path) = args.first() {
                 let mut path = PathBuf::from(path);
 
-                if path == Path::new("~") {
+                if path.starts_with("~") {
                     let home_path = std::env::home_dir().expect("Failed to get home dir!");
 
-                    path = home_path;
+                    // SAFETY: We checked the path has a "~" so this should never happen.
+                    let p = path.strip_prefix("~").unwrap();
+
+                    path = home_path.join(p);
                 }
 
                 let path_exists = path.try_exists().expect("Failed to check is path exists!");
