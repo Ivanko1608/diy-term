@@ -1,3 +1,6 @@
+use std::env::home_dir;
+use std::ffi::OsStr;
+use std::fmt::format;
 use std::path::{Path, PathBuf};
 use std::{env, io};
 
@@ -39,7 +42,7 @@ impl std::fmt::Display for CommandParsingError {
 // TODO: Implement source?
 impl std::error::Error for CommandParsingError {}
 
-pub fn handle_builtin_cmd(cmd: &str, args: &Vec<&str>) -> Result<(), CommandParsingError> {
+pub fn handle_builtin_cmd(cmd: &str, args: &[&str]) -> Result<(), CommandParsingError> {
     use super::builtins::BuiltinCmd;
     use std::process::exit;
 
@@ -73,16 +76,7 @@ pub fn handle_builtin_cmd(cmd: &str, args: &Vec<&str>) -> Result<(), CommandPars
         }
         BuiltinCmd::ChangeDirectory => {
             if let Some(path) = args.first() {
-                let mut path = PathBuf::from(path);
-
-                if path.starts_with("~") {
-                    let home_path = std::env::home_dir().expect("Failed to get home dir!");
-
-                    // SAFETY: We checked the path has a "~" so this should never happen.
-                    let p = path.strip_prefix("~").unwrap();
-
-                    path = home_path.join(p);
-                }
+                let path = PathBuf::from(path);
 
                 let path_exists = path.try_exists().expect("Failed to check is path exists!");
 
@@ -102,7 +96,6 @@ pub fn handle_builtin_cmd(cmd: &str, args: &Vec<&str>) -> Result<(), CommandPars
 }
 
 // TODO: Invalidate cache when PATH changes.
-// FIXME: Get rid of pub
 pub fn fill_bin_cache() -> Result<(), io::Error> {
     let paths = env::var_os(PATH_ENV_KEY).expect("No PATH env var found!");
 
@@ -140,4 +133,14 @@ pub fn fill_bin_cache() -> Result<(), io::Error> {
     }
 
     Ok(())
+}
+
+pub fn expand_home(input: &str) -> String {
+    let home_dir = std::env::home_dir().expect("Failed to get home dir!");
+
+    let Some(home_path) = home_dir.to_str() else {
+        panic!("non UTF-8 home path is not supported!");
+    };
+
+    input.replace("~", home_path)
 }

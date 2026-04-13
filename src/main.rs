@@ -15,7 +15,7 @@ mod history;
 mod macros;
 mod raw_term;
 
-use crate::cmd::{CommandParsingError, fill_bin_cache};
+use crate::cmd::{CommandParsingError, expand_home, fill_bin_cache};
 use crate::history::History;
 use crate::raw_term::util::{clear_line, move_cursor_left_n, move_cursor_right_n};
 use crate::raw_term::{KbKey, RawMode, get_key};
@@ -179,6 +179,8 @@ fn main() {
         if raw_cmd.trim().is_empty() {
             continue;
         }
+
+        raw_cmd = expand_home(&raw_cmd);
 
         let mut cmd_parts = raw_cmd.split_whitespace();
 
