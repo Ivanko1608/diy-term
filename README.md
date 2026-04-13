@@ -1,4 +1,4 @@
-# DIY Terminal
+# DIY shell
 
 This is just a simple shell implementation created for the purpose of experimenting with rust it a systems programming setting.
 
