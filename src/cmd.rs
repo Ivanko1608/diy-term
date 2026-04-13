@@ -1,7 +1,4 @@
-use std::env::home_dir;
-use std::ffi::OsStr;
-use std::fmt::format;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::{env, io};
 
 use crate::{BIN_CACHE, HISTORY};

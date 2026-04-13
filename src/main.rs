@@ -161,11 +161,11 @@ fn main() {
                         print_flush!("$ {raw_cmd}");
                     }
                     KbKey::Unknown(b) => {
-                        eprint!("Some other byte: {:?} \r\n", char::from(b));
+                        eprint!("got unknown byte: {:?} \r\n", char::from(b));
                         io::stderr().flush().unwrap();
                     }
                     KbKey::UnknownMultiByte(v) => {
-                        eprint!("{:?}", v);
+                        eprint!("got unknown multi-byte sequence: {:?}", v);
                         io::stderr().flush().unwrap();
                     }
                     key => {
@@ -180,6 +180,7 @@ fn main() {
             continue;
         }
 
+        // FIXME: This causes commands to be saved to history already expanded.
         raw_cmd = expand_home(&raw_cmd);
 
         let mut cmd_parts = raw_cmd.split_whitespace();
