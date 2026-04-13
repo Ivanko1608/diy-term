@@ -1,4 +1,4 @@
-use std::io::{self, Read, Write};
+use std::io::Read;
 use std::{
     collections::HashMap,
     path::PathBuf,
@@ -8,22 +8,17 @@ use std::{
 
 use std::sync::Mutex;
 
-use crate::cmd::{CommandParsingError, fill_bin_cache};
-use crate::history::History;
-use crate::raw_term::util::clear_line;
-use crate::raw_term::{KbKey, RawMode, get_key};
 mod builtins;
 mod cmd;
 mod file_type;
 mod history;
+mod macros;
 mod raw_term;
 
-macro_rules! print_flush {
-    ($($arg:tt)+) => {
-        print!($($arg)+);
-        io::stdout().flush().expect("Failed to flush Stdout");
-    };
-}
+use crate::cmd::{CommandParsingError, fill_bin_cache};
+use crate::history::History;
+use crate::raw_term::util::{clear_line, move_cursor_left_n, move_cursor_right_n};
+use crate::raw_term::{KbKey, RawMode, get_key};
 
 /// Cache of binary names -> paths, found in all dirs from the PATH env var.
 pub static BIN_CACHE: LazyLock<RwLock<HashMap<String, PathBuf>>> =
@@ -46,9 +41,23 @@ fn main() {
 
     std::thread::spawn(|| {
         use std::time::Duration;
+        let mut retry_count = 0;
+
         loop {
+            if retry_count >= 5 {
+                eprintln!("failed to open file 5 times exiting");
+                return;
+            }
             std::thread::sleep(Duration::from_secs(15));
-            HISTORY.lock().unwrap().write_to_disk();
+            if let Err(res) = HISTORY.lock().unwrap().write_to_disk() {
+                eprintln!("failed to open file history file {res}");
+
+                eprintln!("Retrying in 15 seconds, retry_count: {}", retry_count);
+                retry_count += 1;
+                std::thread::sleep(Duration::from_secs(15));
+                continue;
+            };
+            retry_count = 0;
         }
     });
 
@@ -56,9 +65,10 @@ fn main() {
         print_flush!("$ ");
 
         let mut raw_cmd = String::new();
+        let mut saved_cmd: Option<String> = None;
         {
             let _raw_mod = RawMode::new();
-            let mut cursor = raw_cmd.len();
+            let mut cursor = 0;
 
             loop {
                 let mut input_buf = [0u8; 1];
@@ -68,6 +78,8 @@ fn main() {
 
                 match get_key(input_buf[0]) {
                     KbKey::Enter => {
+                        HISTORY.lock().unwrap().reset_browsing();
+
                         print_flush!("\r\n");
                         break;
                     }
@@ -89,11 +101,19 @@ fn main() {
 
                         clear_line();
                         print_flush!("$ {raw_cmd}");
+                        if cursor != raw_cmd.len() {
+                            move_cursor_left_n(raw_cmd.len() - cursor).unwrap();
+                        }
                     }
                     KbKey::Char(c) => {
-                        raw_cmd.push(c);
+                        raw_cmd.insert(cursor, c);
+
                         cursor += 1;
-                        print_flush!("{}", c);
+                        clear_line();
+                        print_flush!("$ {raw_cmd}");
+                        if cursor != raw_cmd.len() {
+                            move_cursor_left_n(raw_cmd.len() - cursor).unwrap();
+                        }
                     }
                     KbKey::Left => {
                         if cursor != 0 {
@@ -102,11 +122,43 @@ fn main() {
                             continue;
                         }
 
-                        print_flush!("\x1b[1D");
+                        move_cursor_left_n(1).unwrap();
                     }
                     KbKey::Right => {
                         cursor += 1;
-                        print_flush!("\x1b[1C");
+                        if raw_cmd.len() <= cursor {
+                            raw_cmd.push(' ');
+                        }
+                        move_cursor_right_n(1).unwrap();
+                    }
+                    KbKey::Up => {
+                        let mut history = HISTORY.lock().unwrap();
+                        let Some(cmd) = history.next() else {
+                            continue;
+                        };
+
+                        if saved_cmd.is_none() {
+                            saved_cmd = Some(raw_cmd.clone());
+                        }
+
+                        raw_cmd = cmd.to_string();
+                        clear_line();
+                        print_flush!("$ {raw_cmd}");
+                    }
+                    KbKey::Down => {
+                        let mut history = HISTORY.lock().unwrap();
+                        let Some(cmd) = history.prev() else {
+                            history.reset_browsing();
+
+                            raw_cmd = Option::take(&mut saved_cmd).unwrap_or_default();
+
+                            clear_line();
+                            print_flush!("$ {raw_cmd}");
+                            continue;
+                        };
+                        raw_cmd = cmd.to_string();
+                        clear_line();
+                        print_flush!("$ {raw_cmd}");
                     }
                     KbKey::Unknown(b) => {
                         eprint!("Some other byte: {:?} \r\n", char::from(b));

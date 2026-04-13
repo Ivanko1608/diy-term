@@ -3,9 +3,6 @@
 use libc::{STDIN_FILENO, TCSANOW, cfmakeraw, tcgetattr, tcsetattr, termios};
 use std::io::{self, Error, Read};
 
-// Control sequence introducer (ANSI)
-const CSI: u8 = b'\x9b';
-
 //ANSI: Escape sequence
 const ESC: u8 = b'\x1b';
 
@@ -77,13 +74,13 @@ pub fn get_key(raw_key: u8) -> KbKey {
 
         //ANSI Escape parsing
         ESC => {
-            let mut buf = [0u8, 2];
+            let mut buf = [0u8; 2];
 
             io::stdin()
                 .read_exact(&mut buf)
                 .expect("Failed to read 2 bytes from input!");
 
-            if !buf[0] == CSI {
+            if buf[0] != b'[' {
                 return KbKey::UnknownMultiByte(std::iter::once(ESC).chain(buf).collect());
             }
 
@@ -100,11 +97,41 @@ pub fn get_key(raw_key: u8) -> KbKey {
 }
 
 pub mod util {
+    use crate::print_flush;
+    use std::fmt::Display;
+
     /// Clears the current terminal line.
     /// `\r` — move to start of line
     /// `\x1b[K` — erase from cursor to end of line
     /// **Caller is responsible for flushing the buffer!**
     pub fn clear_line() {
         print!("\r\x1b[K");
+    }
+
+    #[derive(Debug)]
+    pub struct OffByOneError(usize);
+
+    impl Display for OffByOneError {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "off-by-one-error: ANSI counts from one, got: {}", self.0,)
+        }
+    }
+
+    pub fn move_cursor_right_n(n: usize) -> Result<(), OffByOneError> {
+        if n < 1 {
+            return Err(OffByOneError(n));
+        }
+
+        print_flush!("\x1b[{n}C");
+        Ok(())
+    }
+
+    pub fn move_cursor_left_n(n: usize) -> Result<(), OffByOneError> {
+        if n < 1 {
+            return Err(OffByOneError(n));
+        }
+
+        print_flush!("\x1b[{n}D");
+        Ok(())
     }
 }
