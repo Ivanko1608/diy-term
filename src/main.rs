@@ -54,7 +54,6 @@ fn main() {
 
                 eprintln!("Retrying in 15 seconds, retry_count: {}", retry_count);
                 retry_count += 1;
-                std::thread::sleep(Duration::from_secs(15));
                 continue;
             };
             retry_count = 0;
