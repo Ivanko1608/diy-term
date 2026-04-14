@@ -158,7 +158,7 @@ fn main() {
                         let Some(cmd) = history.prev() else {
                             history.reset_browsing();
 
-                            raw_cmd = Option::take(&mut saved_cmd).unwrap_or_default();
+                            raw_cmd = saved_cmd.take().unwrap_or_default();
 
                             clear_line();
                             cursor = raw_cmd.len();
@@ -205,7 +205,7 @@ fn main() {
 
         match result {
             Ok(()) => {
-                HISTORY.lock().unwrap().add_cmd(cmd, args);
+                HISTORY.lock().unwrap().add_cmd(cmd, &args);
             }
             Err(CommandParsingError::CommandNotFound(cmd)) => {
                 let Some(_bin_path) = BIN_CACHE
@@ -225,7 +225,7 @@ fn main() {
                     .status()
                     .expect("Command failed!");
 
-                HISTORY.lock().unwrap().add_cmd(&cmd, args);
+                HISTORY.lock().unwrap().add_cmd(&cmd, &args);
             }
             Err(e) => {
                 eprintln!("Failed to execute builtin command! {e}");

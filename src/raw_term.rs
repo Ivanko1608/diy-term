@@ -118,7 +118,7 @@ pub mod util {
     }
 
     pub fn move_cursor_right_n(n: usize) -> Result<(), OffByOneError> {
-        if n < 1 {
+        if n == 0 {
             return Err(OffByOneError(n));
         }
 
@@ -127,7 +127,7 @@ pub mod util {
     }
 
     pub fn move_cursor_left_n(n: usize) -> Result<(), OffByOneError> {
-        if n < 1 {
+        if n == 0 {
             return Err(OffByOneError(n));
         }
 

@@ -56,7 +56,7 @@ impl History {
         &self.history
     }
 
-    pub fn add_cmd(&mut self, cmd: &str, args: Vec<&str>) {
+    pub fn add_cmd(&mut self, cmd: &str, args: &[&str]) {
         if self.history.len() >= DEFAULT_HISTORY_LENGTH {
             self.history.pop_front();
         }
@@ -111,7 +111,7 @@ impl History {
 
 #[cfg(test)]
 mod test {
-    use std::{time::UNIX_EPOCH, vec};
+    use std::time::UNIX_EPOCH;
 
     use super::*;
 
@@ -129,7 +129,7 @@ mod test {
     fn test_history_caps_at_limit() {
         let mut history = History::with_path(get_random_history_path());
         for _ in 0..10_005 {
-            history.add_cmd("rm", vec!["-rf", "./coffee"]);
+            history.add_cmd("rm", &["-rf", "./coffee"]);
         }
         assert_eq!(history.get_history().len(), DEFAULT_HISTORY_LENGTH);
     }
@@ -138,9 +138,9 @@ mod test {
     #[test]
     fn test_history_next_and_prev_random() {
         let mut history = History::with_path(get_random_history_path());
-        history.add_cmd("foo", vec!["bar"]);
-        history.add_cmd("bar", vec!["baz"]);
-        history.add_cmd("lel", vec!["osdoods"]);
+        history.add_cmd("foo", &["bar"]);
+        history.add_cmd("bar", &["baz"]);
+        history.add_cmd("lel", &["osdoods"]);
 
         let el = history.next().unwrap();
 
