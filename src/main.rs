@@ -148,6 +148,12 @@ fn main() {
                         print_flush!("$ {raw_cmd}");
                     }
                     KbKey::Down => {
+                        // If saved_cmd is none then we aren't in history search mode thus we ignore
+                        // the keydown event.
+                        if saved_cmd.is_none() {
+                            continue;
+                        }
+
                         let mut history = HISTORY.lock().unwrap();
                         let Some(cmd) = history.prev() else {
                             history.reset_browsing();
@@ -155,6 +161,7 @@ fn main() {
                             raw_cmd = Option::take(&mut saved_cmd).unwrap_or_default();
 
                             clear_line();
+                            cursor = raw_cmd.len();
                             print_flush!("$ {raw_cmd}");
                             continue;
                         };
