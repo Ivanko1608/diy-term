@@ -142,6 +142,8 @@ fn main() {
                         }
 
                         raw_cmd = cmd.to_string();
+                        cursor = raw_cmd.len();
+
                         clear_line();
                         print_flush!("$ {raw_cmd}");
                     }
@@ -157,6 +159,8 @@ fn main() {
                             continue;
                         };
                         raw_cmd = cmd.to_string();
+                        cursor = raw_cmd.len();
+
                         clear_line();
                         print_flush!("$ {raw_cmd}");
                     }
