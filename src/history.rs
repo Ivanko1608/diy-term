@@ -56,12 +56,12 @@ impl History {
         &self.history
     }
 
-    pub fn add_cmd(&mut self, cmd: &str, args: &[&str]) {
+    pub fn add_cmd(&mut self, cmd: &str) {
         if self.history.len() >= DEFAULT_HISTORY_LENGTH {
             self.history.pop_front();
         }
 
-        self.history.push_back(format!("{cmd} {}", args.join(" ")));
+        self.history.push_back(cmd.to_string());
     }
 
     pub fn prev(&mut self) -> Option<&str> {
@@ -129,7 +129,7 @@ mod test {
     fn test_history_caps_at_limit() {
         let mut history = History::with_path(get_random_history_path());
         for _ in 0..10_005 {
-            history.add_cmd("rm", &["-rf", "./coffee"]);
+            history.add_cmd("rm-rf./coffee");
         }
         assert_eq!(history.get_history().len(), DEFAULT_HISTORY_LENGTH);
     }
@@ -138,9 +138,9 @@ mod test {
     #[test]
     fn test_history_next_and_prev_random() {
         let mut history = History::with_path(get_random_history_path());
-        history.add_cmd("foo", &["bar"]);
-        history.add_cmd("bar", &["baz"]);
-        history.add_cmd("lel", &["osdoods"]);
+        history.add_cmd("foo bar");
+        history.add_cmd("bar baz");
+        history.add_cmd("lel osdoods");
 
         let el = history.next().unwrap();
 

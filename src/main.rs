@@ -190,10 +190,9 @@ fn main() {
             continue;
         }
 
-        // FIXME: This causes commands to be saved to history already expanded.
-        raw_cmd = expand_home(&raw_cmd);
+        let expanded_cmd = expand_home(&raw_cmd);
 
-        let mut cmd_parts = raw_cmd.split_whitespace();
+        let mut cmd_parts = expanded_cmd.split_whitespace();
 
         let cmd = cmd_parts
             .next()
@@ -204,7 +203,7 @@ fn main() {
 
         match result {
             Ok(()) => {
-                HISTORY.lock().unwrap().add_cmd(cmd, &args);
+                HISTORY.lock().unwrap().add_cmd(&raw_cmd);
             }
             Err(CommandParsingError::CommandNotFound(cmd)) => {
                 let Some(_bin_path) = BIN_CACHE
@@ -224,7 +223,7 @@ fn main() {
                     .status()
                     .expect("Command failed!");
 
-                HISTORY.lock().unwrap().add_cmd(&cmd, &args);
+                HISTORY.lock().unwrap().add_cmd(&raw_cmd);
             }
             Err(e) => {
                 eprintln!("Failed to execute builtin command! {e}");
